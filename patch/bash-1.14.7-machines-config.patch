@@ -1,0 +1,21 @@
+diff -ru bash-1.14.7/machines.h bash-1.14.7.new2/machines.h
+--- bash-1.14.7/machines.h	1995-12-18 14:13:22.000000000 -0500
++++ bash-1.14.7.new2/machines.h	2015-03-17 02:50:38.618813331 -0400
+@@ -584,7 +584,7 @@
+ /*								    */
+ /* **************************************************************** */
+ 
+-#if defined (i386)
++#if defined (i386) || defined (__x86_64__)
+ 
+ /* Sequent Symmetry running Dynix/ptx 2.x */
+ #  if !defined (done386) && defined (_SEQUENT_)
+@@ -891,6 +891,7 @@
+ #    define HAVE_SYS_SIGLIST
+ #    define HAVE_VFPRINTF
+ #    define HAVE_VARARGS_H
++#    define USE_TERMCAP_EMULATION
+ #    define SEARCH_LIB_NEEDS_SPACE
+ #    if defined (__GNUC__)
+ #      define HAVE_FIXED_INCLUDES
+diff -ru bash-1.14.7/print_cmd.c bash-1.14.7.new2/print_cmd.c

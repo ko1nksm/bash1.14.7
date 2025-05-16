@@ -1,0 +1,284 @@
+diff -ru bash-1.14.7/builtins/common.c bash-1.14.7.new2/builtins/common.c
+--- bash-1.14.7/builtins/common.c	1995-01-30 13:02:37.000000000 -0500
++++ bash-1.14.7.new2/builtins/common.c	2015-03-17 02:38:18.479744668 -0400
+@@ -20,7 +20,7 @@
+ #include <sys/types.h>
+ #include "../posixstat.h"
+ #if defined (HAVE_VFPRINTF)
+-#include <varargs.h>
++#include <stdarg.h>
+ #endif /* VFPRINTF */
+ 
+ #if defined (HAVE_STRING_H)
+@@ -114,17 +114,14 @@
+    shell. */
+ #if defined (HAVE_VFPRINTF)
+ void
+-builtin_error (va_alist)
+-     va_dcl
++builtin_error (char *format, ...)
+ {
+-  char *format;
+   va_list args;
+ 
+   if (this_command_name && *this_command_name)
+     fprintf (stderr, "%s: ", this_command_name);
+ 
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (stderr, format, args);
+   va_end (args);
+   fprintf (stderr, "\n");
+diff -ru bash-1.14.7/builtins/common.h bash-1.14.7.new2/builtins/common.h
+--- bash-1.14.7/builtins/common.h	1994-04-18 19:39:46.000000000 -0500
++++ bash-1.14.7.new2/builtins/common.h	2015-03-17 02:38:18.479744668 -0400
+@@ -23,7 +23,7 @@
+ 
+ #define ISOPTION(s, c)	(s[0] == '-' && !s[2] && s[1] == c)
+ 
+-extern void builtin_error ();
++extern void builtin_error (char *, ...);
+ extern void bad_option ();
+ 
+ extern int get_numeric_arg ();
+diff -ru bash-1.14.7/error.c bash-1.14.7.new2/error.c
+--- bash-1.14.7/error.c	1994-12-05 13:39:31.000000000 -0500
++++ bash-1.14.7.new2/error.c	2015-03-17 02:38:18.479744668 -0400
+@@ -22,7 +22,7 @@
+ #include <fcntl.h>
+ 
+ #if defined (HAVE_VFPRINTF)
+-#include <varargs.h>
++#include <stdarg.h>
+ #endif
+ 
+ #include <errno.h>
+@@ -121,18 +121,15 @@
+ #else /* We have VARARGS support, so use it. */
+ 
+ void
+-programming_error (va_alist)
+-     va_dcl
++programming_error (char *format, ...)
+ {
+   va_list args;
+-  char *format;
+ 
+ #if defined (JOB_CONTROL)
+   give_terminal_to (shell_pgrp);
+ #endif /* JOB_CONTROL */
+ 
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (stderr, format, args);
+   fprintf (stderr, "\n");
+   va_end (args);
+@@ -144,15 +141,12 @@
+ }
+ 
+ void
+-report_error (va_alist)
+-     va_dcl
++report_error (char *format, ...)
+ {
+   va_list args;
+-  char *format;
+ 
+   fprintf (stderr, "%s: ", get_name_for_error ());
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (stderr, format, args);
+   fprintf (stderr, "\n");
+ 
+@@ -162,15 +156,12 @@
+ }
+ 
+ void
+-fatal_error (va_alist)
+-     va_dcl
++fatal_error (char *format, ...)
+ {
+   va_list args;
+-  char *format;
+ 
+   fprintf (stderr, "%s: ", get_name_for_error ());
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (stderr, format, args);
+   fprintf (stderr, "\n");
+ 
+@@ -179,30 +170,24 @@
+ }
+ 
+ void
+-internal_error (va_alist)
+-     va_dcl
++internal_error (char *format, ...)
+ {
+   va_list args;
+-  char *format;
+ 
+   fprintf (stderr, "%s: ", get_name_for_error ());
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (stderr, format, args);
+   fprintf (stderr, "\n");
+ 
+   va_end (args);
+ }
+ 
+-itrace (va_alist)
+-     va_dcl
++itrace (char *format, ...)
+ {
+   va_list args;
+-  char *format;
+ 
+   fprintf(stderr, "TRACE: pid %d: ", getpid());
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (stderr, format, args);
+   fprintf (stderr, "\n");
+ 
+@@ -214,11 +199,9 @@
+ #if 0
+ /* A trace function for silent debugging -- doesn't require a control
+    terminal. */
+-trace (va_alist)
+-     va_dcl
++trace (char *format, ...)
+ {
+   va_list args;
+-  char *format;
+   static FILE *tracefp = (FILE *)NULL;
+ 
+   if (tracefp == NULL)
+@@ -231,8 +214,7 @@
+ 
+   fprintf(tracefp, "TRACE: pid %d: ", getpid());
+ 
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vfprintf (tracefp, format, args);
+   fprintf (tracefp, "\n");
+ 
+diff -ru bash-1.14.7/error.h bash-1.14.7.new2/error.h
+--- bash-1.14.7/error.h	1994-01-26 14:31:10.000000000 -0500
++++ bash-1.14.7.new2/error.h	2015-03-17 02:38:18.479744668 -0400
+@@ -25,10 +25,10 @@
+ extern void file_error ();
+ 
+ /* Report a programmer's error, and abort.  Pass REASON, and ARG1 ... ARG5. */
+-extern void programming_error ();
++extern void programming_error (char *, ...);
+ 
+ /* General error reporting.  Pass FORMAT and ARG1 ... ARG5. */
+-extern void report_error ();
++extern void report_error (char *, ...);
+ 
+ /* Report an unrecoverable error and exit.  Pass FORMAT and ARG1 ... ARG5. */
+-extern void fatal_error ();
++extern void fatal_error (char *, ...);
+diff -ru bash-1.14.7/lib/readline/display.c bash-1.14.7.new2/lib/readline/display.c
+--- bash-1.14.7/lib/readline/display.c	1995-05-01 09:18:02.000000000 -0500
++++ bash-1.14.7.new2/lib/readline/display.c	2015-03-17 02:46:02.243878132 -0400
+@@ -1020,14 +1020,11 @@
+    mini-modeline. */
+ 
+ #if defined (HAVE_VARARGS_H)
+-rl_message (va_alist)
+-     va_dcl
++rl_message (char *format, ...)
+ {
+-  char *format;
+   va_list args;
+ 
+-  va_start (args);
+-  format = va_arg (args, char *);
++  va_start (args, format);
+   vsprintf (msg_buf, format, args);
+   va_end (args);
+ 
+diff -ru bash-1.14.7/lib/readline/readline.h bash-1.14.7.new2/lib/readline/readline.h
+--- bash-1.14.7/lib/readline/readline.h	1994-07-26 14:35:40.000000000 -0500
++++ bash-1.14.7.new2/lib/readline/readline.h	2015-03-17 02:46:34.466572077 -0400
+@@ -271,7 +271,7 @@
+ 
+ /* Functions in display.c */
+ extern void rl_redisplay ();
+-extern int rl_message (), rl_clear_message ();
++extern int rl_message (char *, ...), rl_clear_message ();
+ extern int rl_reset_line_state ();
+ extern int rl_character_len ();
+ extern int rl_show_char ();
+diff -ru bash-1.14.7/lib/readline/rldefs.h bash-1.14.7.new2/lib/readline/rldefs.h
+--- bash-1.14.7/lib/readline/rldefs.h	1995-02-25 18:55:43.000000000 -0500
++++ bash-1.14.7.new2/lib/readline/rldefs.h	2015-03-17 02:45:26.611251831 -0400
+@@ -150,7 +150,7 @@
+ #endif /* !strchr && !__STDC__ */
+ 
+ #if defined (HAVE_VARARGS_H)
+-#  include <varargs.h>
++#  include <stdarg.h>
+ #endif /* HAVE_VARARGS_H */
+ 
+ /* This is needed to include support for TIOCGWINSZ and window resizing. */
+--- bash-1.14.7/print_cmd.c	1995-01-30 12:45:09.000000000 -0500
++++ bash-1.14.7.new2/print_cmd.c	2015-03-17 02:44:02.712916475 -0400
+@@ -20,7 +20,7 @@
+ #include <stdio.h>
+ 
+ #if defined (HAVE_VARARGS_H)
+-#  include <varargs.h>
++#  include <stdarg.h>
+ #endif
+ 
+ #if defined (HAVE_STRING_H)
+@@ -41,7 +41,7 @@
+ static int indentation = 0;
+ static int indentation_amount = 4;
+ 
+-static void cprintf (), newline (), indent (), the_printed_command_resize ();
++static void cprintf (char *, ...), newline (), indent (), the_printed_command_resize ();
+ static void semicolon ();
+ 
+ static void make_command_string_internal ();
+@@ -730,16 +730,14 @@
+ 
+ /* How to make the string. */
+ static void
+-cprintf (va_alist)
+-     va_dcl
++cprintf (char *control, ...)
+ {
+   register char *s;
+-  char *control, char_arg[2], *argp;
++  char char_arg[2], *argp;
+   int digit_arg, arg_len, c;
+   va_list args;
+ 
+-  va_start (args);
+-  control = va_arg (args, char *);
++  va_start (args, control);
+ 
+   arg_len = strlen (control);
+   the_printed_command_resize (arg_len + 1);
+diff -ru bash-1.14.7/shell.c bash-1.14.7.new2/shell.c
+--- bash-1.14.7/shell.c	1995-04-06 15:45:00.000000000 -0500
++++ bash-1.14.7.new2/shell.c	2015-03-17 02:38:18.483077935 -0400
+@@ -43,7 +43,7 @@
+ #include "bashansi.h"
+ 
+ #if defined (HAVE_VARARGS_H)
+-#include <varargs.h>
++#include <stdarg.h>
+ #endif
+ 
+ #include "shell.h"
